@@ -17,6 +17,56 @@ We would appreciate if you could cite our work if it is useful for you :)
 > **Note**: If you are just looking for our results, you can directly download them [at this link](https://gitlab.com/agaldran/shared_results/-/raw/master/pre_generated_results.zip?inline=false).
 
 
+## Quickstart: reproducible A/V segmentation with pixi
+
+This fork ships a [pixi](https://pixi.sh) environment (`pixi.toml` + `pixi.lock`) that
+recreates the **exact** dependency set used to generate the artery/vein masks, so any
+fresh Linux machine can reproduce the pipeline without hunting for compatible package
+versions. The locked stack is CPU-only: Python 3.11.5, PyTorch 2.0.1 (cpu),
+torchvision 0.15.2 (cpu), NumPy 1.26.0, Pillow 10.0.1, scikit-image 0.20.0,
+SciPy 1.11.3, setuptools 68.0.0 — all pinned by build in `pixi.lock`.
+
+**From scratch on a clean machine:**
+
+```bash
+# 1. Install pixi (no root needed; installs to ~/.pixi)
+curl -fsSL https://pixi.sh/install.sh | bash
+exec $SHELL          # reload so `pixi` is on PATH
+
+# 2. Get this repo
+git clone https://github.com/mjbeyeler/lwnet.git
+cd lwnet
+
+# 3. Materialise the locked environment (downloads exact pinned packages)
+pixi install
+```
+
+`pixi install` reads `pixi.lock` and builds an isolated env under `./.pixi/`
+(git-ignored). Nothing else on the system is touched, and the resolved versions are
+identical on every machine.
+
+**Run it:**
+
+```bash
+# Single image -> writes <stem>_seg.png (RGB) and <stem>_bin_seg.png (binary A/V)
+pixi run predict-one  --im_path  path/to/image.png  --result_path out_dir
+
+# Whole folder (loads the model once; converts inputs to RGB)
+pixi run predict-batch --im_dir  path/to/images_dir --result_path out_dir
+```
+
+Both tasks default to `--device cpu`. The default model is `experiments/big_wnet_drive_av`
+(bundled in this repo).
+
+**Notes for other Linux hosts**
+
+- The manifest sets `[system-requirements] linux = "5.4"` because the original host runs
+  an older 5.4 kernel; pixi otherwise refuses to solve on kernels below its 5.10 default.
+  This is harmless on newer kernels — raise it to your kernel version if you prefer.
+- The environment is deliberately **CPU-only** for bit-level reproducibility. A CUDA build
+  would be a separate env and is not required to run inference.
+- All packages come from Anaconda's `main` channel (see `channels` in `pixi.toml`).
+
 Please find below a table of contents describing what you can find in this repository:
 
 ## Table of Contents
