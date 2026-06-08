@@ -1,3 +1,6 @@
+# Pixi environment (local install; reproduced from pixi.lock)
+.pixi/
+
 # Ignore python local caching files
 __pycache__
 **.idea

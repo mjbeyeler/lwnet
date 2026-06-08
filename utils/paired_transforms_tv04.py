@@ -18,7 +18,7 @@ from torchvision.transforms import functional as F
 import torchvision.transforms as T
 import pkg_resources
 import distutils.version
-TORCHVISION_VERSION = distutils.version.LooseVersion(pkg_resources.require('torchvision')[0].version)
+TORCHVISION_VERSION = distutils.version.LooseVersion(pkg_resources.get_distribution('torchvision').version)
 
 if sys.version_info < (3, 3):
     Sequence = collections.Sequence

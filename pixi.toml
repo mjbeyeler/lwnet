@@ -1,0 +1,27 @@
+[project]
+name = "lwnet"
+version = "0.1.0"
+description = "The Little W-Net retinal vessel / artery-vein segmentation. Environment reproducing the exact CPU dependencies used to generate A/V masks."
+channels = ["main"]
+platforms = ["linux-64"]
+
+[system-requirements]
+linux = "5.4"
+
+[dependencies]
+# Exact versions/builds taken from the `angioseg` conda env that was verified to
+# run predict_one_image_av.py / batch_predict_av.py (CPU inference).
+python = "3.11.5.*"
+pytorch = { version = "2.0.1", build = "cpu_py311*" }
+torchvision = { version = "0.15.2", build = "cpu_py311*" }
+numpy = "1.26.0.*"
+pillow = "10.0.1.*"
+scikit-image = "0.20.0.*"
+scipy = "1.11.3.*"
+setuptools = "68.0.0.*"   # provides pkg_resources used in utils/paired_transforms_tv04.py
+
+[tasks]
+# Single image: pixi run predict-one --im_path <img> --result_path <dir>
+predict-one = "python predict_one_image_av.py"
+# Whole folder: pixi run predict-batch --im_dir <dir> --result_path <dir>
+predict-batch = "python batch_predict_av.py"
