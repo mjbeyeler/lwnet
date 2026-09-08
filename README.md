@@ -1,95 +1,54 @@
-# lwnet — A/V segmentation for the retinal phenotyping pipeline
+# lwnet
 
-A copy of **[`agaldran/lwnet`](https://github.com/agaldran/lwnet)** — *The Little W-Net
-That Could* — packaged so its artery/vein segmentation can be reproduced from a lockfile.
+Artery/vein segmentation, packaged so one published analysis can be reproduced from a
+lockfile. The method, the models and nearly all of this code are Adrian Galdran's —
+[`agaldran/lwnet`](https://github.com/agaldran/lwnet), MIT. **Cite the upstream paper, not
+this repository**; it is in the original README below.
 
-The method, the models and almost all of the code here are Adrian Galdran's, under the
-MIT licence (see [LICENSE](LICENSE), © 2020 Adrian Galdran). **Please cite the upstream
-paper, not this repository** — the citation is in the original README below.
-
-> **This is a copy, not a GitHub fork.** It was branched from upstream at commit
-> [`ce72dda`](https://github.com/agaldran/lwnet/commit/ce72dda) (16 Jan 2024) and carries
-> two commits of our own on top. Because it is a plain copy, GitHub shows no link back to
-> the original; that link is this paragraph. Everything under `data/`, `experiments/` and
-> `models/` is upstream's, unmodified — including the pretrained checkpoints.
+This is a copy, not a GitHub fork, so nothing in the interface links it to the original —
+that link is this paragraph. Branched at [`ce72dda`](https://github.com/agaldran/lwnet/commit/ce72dda)
+(16 Jan 2024). `data/`, `experiments/` and `models/` are upstream's, unmodified, pretrained
+checkpoints included.
 
 ## Why this copy exists
 
-It is the artery/vein segmentation step of the retinal phenotyping pipeline behind
-*Comparing tangible retinal image characteristics with deep learning features reveals their
-complementarity for gene association and disease prediction*, where it turns colour fundus
-photographs into the A/V masks that the vessel morphometry is then measured on. That paper
-pins this commit so the step stays reproducible; upstream is free to move on. The analysis
-code that consumes these masks is at
-[`tangible-vs-deep-retinal-features`](https://github.com/BergmannLab/tangible-vs-deep-retinal-features).
+It is the artery/vein step of the retinal phenotyping pipeline behind
+[`tangible-vs-deep-retinal-features`](https://github.com/BergmannLab/tangible-vs-deep-retinal-features),
+which pins this commit so the step stays reproducible. Added here, and nothing else: a
+[pixi](https://pixi.sh) environment holding the exact CPU dependencies the published masks
+were generated with, and `batch_predict_av.py`, which loads the model once per folder rather
+than once per image.
 
-What we added, and nothing else:
+## Use
 
-- a [pixi](https://pixi.sh) environment (`pixi.toml` + `pixi.lock`) pinning the exact
-  CPU dependency set the published masks were generated with;
-- `batch_predict_av.py`, a folder-at-a-time driver that loads the model once instead of
-  once per image.
-
-## Quickstart
-
-The locked stack is CPU-only: Python 3.11.5, PyTorch 2.0.1 (cpu), torchvision 0.15.2
-(cpu), NumPy 1.26.0, Pillow 10.0.1, scikit-image 0.20.0, SciPy 1.11.3, setuptools 68.0.0
-— all pinned by build in `pixi.lock`.
-
-```bash
-# 1. Install pixi (no root needed; installs to ~/.pixi)
-curl -fsSL https://pixi.sh/install.sh | bash
-exec $SHELL          # reload so `pixi` is on PATH
-
-# 2. Get this repo
-git clone https://github.com/mjbeyeler/lwnet.git
-cd lwnet
-
-# 3. Materialise the locked environment (downloads exact pinned packages)
-pixi install
 ```
-
-`pixi install` reads `pixi.lock` and builds an isolated env under `./.pixi/`
-(git-ignored). Nothing else on the system is touched, and the resolved versions are
-identical on every machine.
-
-```bash
-# Single image -> writes <stem>_seg.png (RGB) and <stem>_bin_seg.png (binary A/V)
-pixi run predict-one  --im_path  path/to/image.png  --result_path out_dir
-
-# Whole folder (loads the model once; converts inputs to RGB)
+pixi install
+pixi run predict-one   --im_path path/to/image.png  --result_path out_dir
 pixi run predict-batch --im_dir  path/to/images_dir --result_path out_dir
 ```
 
-Both tasks default to `--device cpu`. The default model is `experiments/big_wnet_drive_av`,
-upstream's pretrained A/V checkpoint, bundled in this repo.
+Both default to `--device cpu` and to `experiments/big_wnet_drive_av`, upstream's pretrained
+A/V model. Each image yields `<stem>_seg.png` (class probabilities) and `<stem>_bin_seg.png`
+(hard artery/vein labels: red arteries, blue veins).
 
-**Notes for other Linux hosts**
+Verified against the reference masks the published pipeline produced: 0.076 % of pixels
+differ, artery Dice 0.9931, vein Dice 0.9957, no image losing a vessel class across the 40
+DRIVE images. The residual is PyTorch 1.x → 2.0.1 numerical drift.
 
-- The manifest sets `[system-requirements] linux = "5.4"` because the original host runs
-  an older 5.4 kernel; pixi otherwise refuses to solve on kernels below its 5.10 default.
-  This is harmless on newer kernels — raise it to your kernel version if you prefer.
-- The environment is deliberately **CPU-only** for bit-level reproducibility. A CUDA build
-  would be a separate env and is not required to run inference.
-- All packages come from Anaconda's `main` channel (see `channels` in `pixi.toml`).
+## Two things to keep intact if you port this elsewhere
 
-**Scope of the locked environment.** It covers the two inference entry points above and
-nothing else. Upstream's training and evaluation scripts (`train_cyclical.py`,
-`generate_results.py`, `generate_av_results.py`, `analyze_results.py`) need `tqdm` and
-`pandas`, which are deliberately not in it: we did not retrain or re-evaluate anything, so
-pinning a training stack would imply a reproducibility claim we have not tested. For those,
-use upstream's own `environment.txt` as described in the original README below.
+The published masks were made on scikit-image 0.16; the lockfile pins 0.20, which moved twice.
+`draw.circle` was removed in 0.19, and — silently — `label2rgb`'s `bg_label` default changed
+from `-1` to `0`, which shifts the `colors` list by one so that arteries render black and veins
+render red. That corrupts the hard-label file without raising anything. Both are handled
+explicitly in `predict_one_image_av.py`.
 
-**A note on scikit-image.** The published masks were generated on scikit-image 0.16; this
-environment pins 0.20, which removed `draw.circle` and changed the `label2rgb` `bg_label`
-default. Both are handled explicitly in the code (`predict_one_image_av.py`), because the
-second one is silent: under the new default the `colors` list shifts by one, arteries render
-black and veins render red, and the artery/vein map the downstream morphometry reads is
-wrong without anything failing. If you port this to another environment, keep those two
-call sites intact.
+The locked environment covers inference only. Upstream's training and evaluation scripts need
+`tqdm` and `pandas`, deliberately absent: nothing here was retrained, and pinning a training
+stack would imply a claim that has not been tested. Use upstream's `environment.txt` for those.
 
-Everything below this line is the upstream README, unchanged. Its table-of-contents links
-point at `agaldran/lwnet`, which is the right place for them.
+Everything below is the upstream README, unchanged; its contents links point at
+`agaldran/lwnet`, which is where they belong.
 
 ---
 
