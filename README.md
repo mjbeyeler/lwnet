@@ -1,32 +1,40 @@
-![wnet](models/fig2.png?raw=true "wnet")
+# lwnet — A/V segmentation for the retinal phenotyping pipeline
 
-# The Little W-Net that Could
-You have reached the official repository for our work on retinal vessel segmentation with minimalistic models.
-The above picture represents a WNet architecture, which contains roughly around 70k parameters and closely matches (or outperforms) other more complicated techniques.
-For more details about our work, you can check the related paper:
+A copy of **[`agaldran/lwnet`](https://github.com/agaldran/lwnet)** — *The Little W-Net
+That Could* — packaged so its artery/vein segmentation can be reproduced from a lockfile.
 
-```
-The Little W-Net That Could: State-of-the-Art Retinal Vessel Segmentation with Minimalistic Models
-Adrian Galdran, André Anjos, Jose Dolz, Hadi Chakor, Hervé Lombaert, Ismail Ben Ayed
-https://arxiv.org/abs/2009.01907, Sep. 2020
-```
+The method, the models and almost all of the code here are Adrian Galdran's, under the
+MIT licence (see [LICENSE](LICENSE), © 2020 Adrian Galdran). **Please cite the upstream
+paper, not this repository** — the citation is in the original README below.
 
-We would appreciate if you could cite our work if it is useful for you :)
+> **This is a copy, not a GitHub fork.** It was branched from upstream at commit
+> [`ce72dda`](https://github.com/agaldran/lwnet/commit/ce72dda) (16 Jan 2024) and carries
+> two commits of our own on top. Because it is a plain copy, GitHub shows no link back to
+> the original; that link is this paragraph. Everything under `data/`, `experiments/` and
+> `models/` is upstream's, unmodified — including the pretrained checkpoints.
 
+## Why this copy exists
 
-> **Note**: If you are just looking for our results, you can directly download them [at this link](https://gitlab.com/agaldran/shared_results/-/raw/master/pre_generated_results.zip?inline=false).
+It is the artery/vein segmentation step of the retinal phenotyping pipeline behind
+*Comparing tangible retinal image characteristics with deep learning features reveals their
+complementarity for gene association and disease prediction*, where it turns colour fundus
+photographs into the A/V masks that the vessel morphometry is then measured on. That paper
+pins this commit so the step stays reproducible; upstream is free to move on. The analysis
+code that consumes these masks is at
+[`tangible-vs-deep-retinal-features`](https://github.com/BergmannLab/tangible-vs-deep-retinal-features).
 
+What we added, and nothing else:
 
-## Quickstart: reproducible A/V segmentation with pixi
+- a [pixi](https://pixi.sh) environment (`pixi.toml` + `pixi.lock`) pinning the exact
+  CPU dependency set the published masks were generated with;
+- `batch_predict_av.py`, a folder-at-a-time driver that loads the model once instead of
+  once per image.
 
-This fork ships a [pixi](https://pixi.sh) environment (`pixi.toml` + `pixi.lock`) that
-recreates the **exact** dependency set used to generate the artery/vein masks, so any
-fresh Linux machine can reproduce the pipeline without hunting for compatible package
-versions. The locked stack is CPU-only: Python 3.11.5, PyTorch 2.0.1 (cpu),
-torchvision 0.15.2 (cpu), NumPy 1.26.0, Pillow 10.0.1, scikit-image 0.20.0,
-SciPy 1.11.3, setuptools 68.0.0 — all pinned by build in `pixi.lock`.
+## Quickstart
 
-**From scratch on a clean machine:**
+The locked stack is CPU-only: Python 3.11.5, PyTorch 2.0.1 (cpu), torchvision 0.15.2
+(cpu), NumPy 1.26.0, Pillow 10.0.1, scikit-image 0.20.0, SciPy 1.11.3, setuptools 68.0.0
+— all pinned by build in `pixi.lock`.
 
 ```bash
 # 1. Install pixi (no root needed; installs to ~/.pixi)
@@ -45,8 +53,6 @@ pixi install
 (git-ignored). Nothing else on the system is touched, and the resolved versions are
 identical on every machine.
 
-**Run it:**
-
 ```bash
 # Single image -> writes <stem>_seg.png (RGB) and <stem>_bin_seg.png (binary A/V)
 pixi run predict-one  --im_path  path/to/image.png  --result_path out_dir
@@ -55,8 +61,8 @@ pixi run predict-one  --im_path  path/to/image.png  --result_path out_dir
 pixi run predict-batch --im_dir  path/to/images_dir --result_path out_dir
 ```
 
-Both tasks default to `--device cpu`. The default model is `experiments/big_wnet_drive_av`
-(bundled in this repo).
+Both tasks default to `--device cpu`. The default model is `experiments/big_wnet_drive_av`,
+upstream's pretrained A/V checkpoint, bundled in this repo.
 
 **Notes for other Linux hosts**
 
@@ -66,6 +72,29 @@ Both tasks default to `--device cpu`. The default model is `experiments/big_wnet
 - The environment is deliberately **CPU-only** for bit-level reproducibility. A CUDA build
   would be a separate env and is not required to run inference.
 - All packages come from Anaconda's `main` channel (see `channels` in `pixi.toml`).
+
+Everything below this line is the upstream README, unchanged. Its table-of-contents links
+point at `agaldran/lwnet`, which is the right place for them.
+
+---
+
+![wnet](models/fig2.png?raw=true "wnet")
+
+# The Little W-Net that Could
+You have reached the official repository for our work on retinal vessel segmentation with minimalistic models.
+The above picture represents a WNet architecture, which contains roughly around 70k parameters and closely matches (or outperforms) other more complicated techniques.
+For more details about our work, you can check the related paper:
+
+```
+The Little W-Net That Could: State-of-the-Art Retinal Vessel Segmentation with Minimalistic Models
+Adrian Galdran, André Anjos, Jose Dolz, Hadi Chakor, Hervé Lombaert, Ismail Ben Ayed
+https://arxiv.org/abs/2009.01907, Sep. 2020
+```
+
+We would appreciate if you could cite our work if it is useful for you :)
+
+
+> **Note**: If you are just looking for our results, you can directly download them [at this link](https://gitlab.com/agaldran/shared_results/-/raw/master/pre_generated_results.zip?inline=false).
 
 Please find below a table of contents describing what you can find in this repository:
 

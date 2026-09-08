@@ -1,6 +1,6 @@
 [project]
 name = "lwnet"
-version = "0.1.0"
+version = "1.0.0"
 description = "The Little W-Net retinal vessel / artery-vein segmentation. Environment reproducing the exact CPU dependencies used to generate A/V masks."
 channels = ["main"]
 platforms = ["linux-64"]
