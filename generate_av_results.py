@@ -96,7 +96,9 @@ def create_pred(model, tens, mask, coords_crop, original_sz, tta='no'):
     full_prob = np.stack([full_prob_0, full_prob_2, full_prob_3], axis=2)  # background, artery, vein
 
     full_pred = np.argmax(full_prob, axis=2)
-    full_rgb_pred = label2rgb(full_pred, colors=['black', 'red', 'blue'])
+    # bg_label=-1 explicitly; see predict_one_image_av.py. The scikit-image 0.19 default
+    # change would otherwise render arteries black and veins red.
+    full_rgb_pred = label2rgb(full_pred, colors=['black', 'red', 'blue'], bg_label=-1)
 
     return np.clip(full_prob, 0, 1), full_rgb_pred
 

@@ -73,6 +73,21 @@ upstream's pretrained A/V checkpoint, bundled in this repo.
   would be a separate env and is not required to run inference.
 - All packages come from Anaconda's `main` channel (see `channels` in `pixi.toml`).
 
+**Scope of the locked environment.** It covers the two inference entry points above and
+nothing else. Upstream's training and evaluation scripts (`train_cyclical.py`,
+`generate_results.py`, `generate_av_results.py`, `analyze_results.py`) need `tqdm` and
+`pandas`, which are deliberately not in it: we did not retrain or re-evaluate anything, so
+pinning a training stack would imply a reproducibility claim we have not tested. For those,
+use upstream's own `environment.txt` as described in the original README below.
+
+**A note on scikit-image.** The published masks were generated on scikit-image 0.16; this
+environment pins 0.20, which removed `draw.circle` and changed the `label2rgb` `bg_label`
+default. Both are handled explicitly in the code (`predict_one_image_av.py`), because the
+second one is silent: under the new default the `colors` list shifts by one, arteries render
+black and veins render red, and the artery/vein map the downstream morphometry reads is
+wrong without anything failing. If you port this to another environment, keep those two
+call sites intact.
+
 Everything below this line is the upstream README, unchanged. Its table-of-contents links
 point at `agaldran/lwnet`, which is the right place for them.
 

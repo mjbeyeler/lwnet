@@ -28,6 +28,17 @@ parser.add_argument('--device', type=str, default='cpu', help='where to run the 
 parser.add_argument('--result_path', type=str, default=None, help='path to save prediction)')
 
 from skimage import measure, draw
+
+# scikit-image removed `draw.circle` in 0.19, renaming it to `draw.disk` with the
+# centre passed as a tuple. Both are supported here so this file runs on the 0.16
+# environment the published masks were generated with and on the pinned modern one.
+try:
+    from skimage.draw import disk as _disk
+except ImportError:                                   # scikit-image < 0.19
+    from skimage.draw import circle as _circle
+
+    def _disk(center, radius, shape=None):
+        return _circle(center[0], center[1], radius, shape=shape)
 import numpy as np
 from torchvision.transforms import Resize
 from scipy import optimize
@@ -50,7 +61,7 @@ def get_circ(binary):
 
     def cost(params):
         x0, y0, r = params
-        coords = draw.circle(y0, x0, r, shape=image.shape)
+        coords = _disk((y0, x0), r, shape=image.shape)
         template = np.zeros_like(image)
         template[coords] = 1
         return -np.sum(template == image)
@@ -158,7 +169,10 @@ def create_pred(model, tens, mask, coords_crop, original_sz, tta='no'):
     full_prob = np.stack([full_prob_0, full_prob_2, full_prob_3], axis=2) # background, artery, vein
 
     full_pred = np.argmax(full_prob, axis=2)
-    full_rgb_pred = label2rgb(full_pred, colors=['black', 'red', 'blue'])
+    # bg_label=-1 explicitly: scikit-image 0.19 changed the default from -1 to 0, which
+    # makes label 0 the background and shifts `colors` onto labels 1 and 2 -- arteries
+    # would render black and veins red, silently losing the artery class.
+    full_rgb_pred = label2rgb(full_pred, colors=['black', 'red', 'blue'], bg_label=-1)
 
     return np.clip(full_prob, 0,1), full_rgb_pred
 
